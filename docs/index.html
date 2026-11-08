@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La Makina de Reñí – La IA andaluza que te vacila</title>
+<meta name="description" content="La Makina de Reñí: la IA andaluza que te vacila. Pregúntale lo que quieras… y prepárate pa que te riña.">
+<meta property="og:title" content="La Makina de Reñí">
+<meta property="og:description" content="¿Y a mí qué me cuentáh? La IA andaluza que te vacila.">
+<meta name="theme-color" content="#C8102E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rojo:#C8102E; --rojo-osc:#8E0B20; --albero:#E8B04B;
+    --crema:#FFF6E6; --tinta:#1D1410; --verde:#2E7D4F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Nunito',system-ui,sans-serif;color:var(--crema);
+    background-color:var(--rojo);
+    background-image:radial-gradient(var(--crema) 14%, transparent 15%),
+                     radial-gradient(var(--crema) 14%, transparent 15%);
+    background-size:64px 64px;background-position:0 0,32px 32px;
+    display:flex;align-items:center;justify-content:center;padding:16px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .card{
+    width:100%;max-width:420px;background:var(--tinta);border-radius:28px;
+    padding:32px 24px 24px;text-align:center;
+    box-shadow:0 0 0 6px var(--albero),0 20px 60px rgba(0,0,0,.45);
+  }
+  h1{font-family:'Lilita One',cursive;font-weight:400;font-size:44px;line-height:1;
+     color:var(--albero);letter-spacing:.5px}
+  .slogan{margin-top:10px;font-size:18px;font-weight:800;opacity:.9}
+  .boton-wrap{position:relative;margin:36px auto 20px;width:220px;height:220px}
+  .boton{
+    position:relative;z-index:2;width:220px;height:220px;border-radius:50%;
+    border:none;cursor:pointer;background:var(--rojo);color:var(--crema);
+    box-shadow:inset 0 -10px 0 var(--rojo-osc),0 0 0 8px var(--albero);
+    font-family:'Lilita One',cursive;font-size:28px;line-height:1.1;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .boton:active{transform:scale(.96)}
+  .boton .icono{display:block;font-size:56px;margin-bottom:6px}
+  .boton.activo{background:var(--verde);box-shadow:inset 0 -10px 0 #1d5236,0 0 0 8px var(--albero)}
+  .onda{position:absolute;inset:0;border-radius:50%;border:6px solid var(--albero);opacity:0;z-index:1}
+  .hablando .onda{animation:onda 1.4s ease-out infinite}
+  .hablando .onda:nth-child(2){animation-delay:.45s}
+  @keyframes onda{from{transform:scale(1);opacity:.8}to{transform:scale(1.45);opacity:0}}
+  .estado{min-height:52px;font-size:18px;font-weight:800;color:var(--albero)}
+  .pie{margin-top:18px;font-size:12px;opacity:.6;line-height:1.5}
+  .pie a{color:inherit}
+  /* +18 */
+  .gate{
+    position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
+    padding:16px;background:rgba(29,20,16,.92);
+  }
+  .gate .card{max-width:380px}
+  .gate .grande{font-family:'Lilita One',cursive;font-size:72px;color:var(--rojo);line-height:1}
+  .gate h2{font-family:'Lilita One',cursive;font-weight:400;font-size:28px;color:var(--albero);margin:8px 0 12px}
+  .gate p{font-size:16px;line-height:1.45;opacity:.9}
+  .botones{display:flex;gap:12px;margin-top:22px}
+  .botones button{flex:1;padding:14px;border-radius:14px;border:none;cursor:pointer;
+    font-family:'Lilita One',cursive;font-size:20px}
+  .si{background:var(--albero);color:var(--tinta)}
+  .no{background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
+  .oculto{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- Aviso +18 -->
+<div class="gate" id="gate">
+  <div class="card">
+    <div class="grande">+18</div>
+    <h2>¡Cuidaíto, quiyo!</h2>
+    <p id="gateTexto">La Makina de Reñí es de humor, tiene muy mala leche y dice tacos.
+      Es solo pa mayores de 18 años. ¿Los tienes?</p>
+    <div class="botones" id="gateBotones">
+      <button class="si" id="btnSi">Sí, tengo 18</button>
+      <button class="no" id="btnNo">No</button>
+    </div>
+  </div>
+</div>
+
+<main class="card">
+  <h1>La Makina<br>de Reñí</h1>
+  <p class="slogan">¿Y a mí qué me cuentáh?</p>
+
+  <div class="boton-wrap" id="wrap">
+    <span class="onda"></span><span class="onda"></span>
+    <button class="boton" id="boton" aria-label="Hablar con La Makina">
+      <span class="icono">🎙️</span><span id="botonTexto">Háblale</span>
+    </button>
+  </div>
+
+  <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
+
+  <p class="pie">Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+    Al hablar, tu voz se procesa para generar las respuestas.</p>
+</main>
+
+<script type="module">
+  // ⚠️ Pega aquí el ID completo de tu agente de ElevenLabs
+  const AGENT_ID = "agent_0301m6xbn3vven8tzwxfvjnkr1eg";
+
+  import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client/+esm";
+
+  const $ = (id) => document.getElementById(id);
+  const gate = $("gate"), boton = $("boton"), wrap = $("wrap"),
+        estado = $("estado"), botonTexto = $("botonTexto");
+
+  // --- Aviso +18 ---
+  let mayor = false;
+  try { mayor = localStorage.getItem("makina18") === "si"; } catch (e) {}
+  if (mayor) gate.classList.add("oculto");
+
+  $("btnSi").onclick = () => {
+    try { localStorage.setItem("makina18", "si"); } catch (e) {}
+    gate.classList.add("oculto");
+  };
+  $("btnNo").onclick = () => {
+    $("gateTexto").textContent = "Pos hala, vete pa tu casa a hasé lo debere, niño. Aquí no se te ha perdío ná.";
+    $("gateBotones").classList.add("oculto");
+  };
+
+  // --- Conversación ---
+  let conversacion = null;
+  let ocupado = false;
+
+  const poner = (texto) => (estado.textContent = texto);
+
+  function reiniciarUI() {
+    conversacion = null;
+    boton.classList.remove("activo");
+    wrap.classList.remove("hablando");
+    botonTexto.textContent = "Háblale";
+  }
+
+  async function empezar() {
+    if (AGENT_ID.startsWith("PEGA_AQUI")) {
+      poner("Falta el ID del agente en el código, quiyo.");
+      return;
+    }
+    ocupado = true;
+    poner("Espérate, que me estoy poniendo las zapatillas…");
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      poner("Sin micrófono no te puedo reñí. Dale permiso en el navegador.");
+      ocupado = false;
+      return;
+    }
+    try {
+      conversacion = await Conversation.startSession({
+        agentId: AGENT_ID,
+        onConnect: () => {
+          boton.classList.add("activo");
+          botonTexto.textContent = "Colgar";
+          poner("Ya te escucha… di algo, pesao.");
+        },
+        onDisconnect: () => {
+          reiniciarUI();
+          poner("Te ha colgao. Normal. ¿Otra ronda?");
+        },
+        onError: (err) => {
+          console.error(err);
+          reiniciarUI();
+          poner("Algo ha fallao. Prueba otra vez en un ratito.");
+        },
+        onModeChange: ({ mode }) => {
+          if (mode === "speaking") {
+            wrap.classList.add("hablando");
+            poner("Callaíto, que habla ella…");
+          } else {
+            wrap.classList.remove("hablando");
+            poner("Te escucha… a ver qué tontería le dices ahora.");
+          }
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      reiniciarUI();
+      poner("No he podío conectá. Prueba otra vez.");
+    }
+    ocupado = false;
+  }
+
+  async function terminar() {
+    ocupado = true;
+    try { await conversacion?.endSession(); } catch (e) {}
+    reiniciarUI();
+    poner("Hala, a gusto se ha quedao. ¿Otra?");
+    ocupado = false;
+  }
+
+  boton.onclick = () => {
+    if (ocupado) return;
+    conversacion ? terminar() : empezar();
+  };
+</script>
+</body>
+</html>
