@@ -52,6 +52,7 @@
   .estado{min-height:52px;font-size:18px;font-weight:800;color:var(--albero)}
   .pie{margin-top:18px;font-size:12px;opacity:.6;line-height:1.5}
   .pie a{color:inherit}
+  .debug{margin-top:10px;font-size:11px;opacity:.55;word-break:break-word;min-height:1em}
   /* +18 */
   .gate{
     position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
@@ -98,6 +99,7 @@
 
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
+  <p class="debug" id="debug"></p>
   <p class="pie">Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
@@ -131,6 +133,7 @@
   let ocupado = false;
 
   const poner = (texto) => (estado.textContent = texto);
+  const debug = (t) => { try { $("debug").textContent = t ? "Info técnica: " + t : ""; } catch (e) {} };
 
   function reiniciarUI() {
     conversacion = null;
@@ -145,6 +148,7 @@
       return;
     }
     ocupado = true;
+    debug("");
     poner("Espérate, que me estoy poniendo las zapatillas…");
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -161,14 +165,20 @@
           botonTexto.textContent = "Colgar";
           poner("Ya te escucha… di algo, pesao.");
         },
-        onDisconnect: () => {
+        onDisconnect: (d) => {
           reiniciarUI();
           poner("Te ha colgao. Normal. ¿Otra ronda?");
+          try {
+            if (d && d.reason !== "user") {
+              debug([d.reason, d.message, d.closeCode, d.closeReason].filter(Boolean).join(" · "));
+            }
+          } catch (e) {}
         },
-        onError: (err) => {
-          console.error(err);
+        onError: (msg, ctx) => {
+          console.error(msg, ctx);
           reiniciarUI();
           poner("Algo ha fallao. Prueba otra vez en un ratito.");
+          try { debug(String(msg) + (ctx ? " · " + JSON.stringify(ctx).slice(0, 200) : "")); } catch (e) {}
         },
         onModeChange: ({ mode }) => {
           if (mode === "speaking") {
@@ -184,6 +194,7 @@
       console.error(e);
       reiniciarUI();
       poner("No he podío conectá. Prueba otra vez.");
+      debug(e && e.message ? e.message : String(e));
     }
     ocupado = false;
   }
