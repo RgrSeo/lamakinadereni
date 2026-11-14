@@ -100,7 +100,7 @@
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
   <p class="debug" id="debug"></p>
-  <p class="pie">v6 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">v7 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
@@ -142,8 +142,8 @@
     botonTexto.textContent = "Háblale";
   }
 
-  // Vía de conexión: WebSocket (la lista de dominios permitidos de ElevenLabs rechaza WebRTC sin cabecera Origin)
-  let via = "websocket";
+  // Vía de conexión: primero WebRTC (mejor audio); si falla al conectar, WebSocket
+  let via = "webrtc";
 
   async function conectar(tipo) {
     let hablo = false;
@@ -182,7 +182,6 @@
         onModeChange: ({ mode }) => {
           if (mode === "speaking") {
             hablo = true;
-            if (tipo === "websocket") { try { localStorage.setItem("makinaVia", "websocket"); } catch (e) {} }
             wrap.classList.add("hablando");
             poner("Callaíto, que habla ella…");
           } else {
