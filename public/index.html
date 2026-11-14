@@ -100,7 +100,7 @@
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
   <p class="debug" id="debug"></p>
-  <p class="pie">v4 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">v5 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
@@ -154,6 +154,7 @@
         agentId: AGENT_ID,
         connectionType: tipo,
         onConnect: () => {
+          marcarConexion();
           boton.classList.add("activo");
           botonTexto.textContent = "Colgar";
           poner("Ya te escucha… di algo, pesao.");
@@ -231,8 +232,12 @@
     ocupado = false;
   }
 
+  // Evita colgar sin querer por un doble toque nada más conectar
+  let conectadoEn = 0;
+  const marcarConexion = () => { conectadoEn = Date.now(); };
   boton.onclick = () => {
     if (ocupado) return;
+    if (conversacion && Date.now() - conectadoEn < 3000) return;
     conversacion ? terminar() : empezar();
   };
 </script>
