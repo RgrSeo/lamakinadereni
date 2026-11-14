@@ -142,6 +142,69 @@
     botonTexto.textContent = "Háblale";
   }
 
+  // Vía de conexión: primero WebRTC; si falla, WebSocket (pasa por casi cualquier red)
+  let via = "webrtc";
+  try { if (localStorage.getItem("makinaVia") === "websocket") via = "websocket"; } catch (e) {}
+
+  async function conectar(tipo) {
+    let hablo = false;
+    const abierta = Date.now();
+    try {
+      conversacion = await Conversation.startSession({
+        agentId: AGENT_ID,
+        connectionType: tipo,
+        onConnect: () => {
+          boton.classList.add("activo");
+          botonTexto.textContent = "Colgar";
+          poner("Ya te escucha… di algo, pesao.");
+        },
+        onDisconnect: (d) => {
+          const rapido = Date.now() - abierta < 8000;
+          const porError = d && d.reason === "error";
+          reiniciarUI();
+          if (porError && !hablo && rapido && tipo === "webrtc") {
+            poner("Espérate, que pruebo por otro lao…");
+            via = "websocket";
+            ocupado = true;
+            conectar("websocket").finally(() => { ocupado = false; });
+            return;
+          }
+          poner("Te ha colgao. Normal. ¿Otra ronda?");
+          try {
+            if (d && d.reason !== "user") {
+              debug("[" + tipo + "] " + [d.reason, d.message, d.closeCode, d.closeReason].filter(Boolean).join(" · "));
+            }
+          } catch (e) {}
+        },
+        onError: (msg, ctx) => {
+          console.error(msg, ctx);
+          try { debug("[" + tipo + "] " + String(msg) + (ctx ? " · " + JSON.stringify(ctx).slice(0, 200) : "")); } catch (e) {}
+        },
+        onModeChange: ({ mode }) => {
+          if (mode === "speaking") {
+            hablo = true;
+            if (tipo === "websocket") { try { localStorage.setItem("makinaVia", "websocket"); } catch (e) {} }
+            wrap.classList.add("hablando");
+            poner("Callaíto, que habla ella…");
+          } else {
+            wrap.classList.remove("hablando");
+            poner("Te escucha… a ver qué tontería le dices ahora.");
+          }
+        },
+      });
+    } catch (e) {
+      console.error(e);
+      reiniciarUI();
+      if (tipo === "webrtc") {
+        poner("Espérate, que pruebo por otro lao…");
+        via = "websocket";
+        return conectar("websocket");
+      }
+      poner("No he podío conectá. Prueba otra vez.");
+      debug("[" + tipo + "] " + (e && e.message ? e.message : String(e)));
+    }
+  }
+
   async function empezar() {
     if (AGENT_ID.startsWith("PEGA_AQUI")) {
       poner("Falta el ID del agente en el código, quiyo.");
@@ -157,45 +220,7 @@
       ocupado = false;
       return;
     }
-    try {
-      conversacion = await Conversation.startSession({
-        agentId: AGENT_ID,
-        onConnect: () => {
-          boton.classList.add("activo");
-          botonTexto.textContent = "Colgar";
-          poner("Ya te escucha… di algo, pesao.");
-        },
-        onDisconnect: (d) => {
-          reiniciarUI();
-          poner("Te ha colgao. Normal. ¿Otra ronda?");
-          try {
-            if (d && d.reason !== "user") {
-              debug([d.reason, d.message, d.closeCode, d.closeReason].filter(Boolean).join(" · "));
-            }
-          } catch (e) {}
-        },
-        onError: (msg, ctx) => {
-          console.error(msg, ctx);
-          reiniciarUI();
-          poner("Algo ha fallao. Prueba otra vez en un ratito.");
-          try { debug(String(msg) + (ctx ? " · " + JSON.stringify(ctx).slice(0, 200) : "")); } catch (e) {}
-        },
-        onModeChange: ({ mode }) => {
-          if (mode === "speaking") {
-            wrap.classList.add("hablando");
-            poner("Callaíto, que habla ella…");
-          } else {
-            wrap.classList.remove("hablando");
-            poner("Te escucha… a ver qué tontería le dices ahora.");
-          }
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      reiniciarUI();
-      poner("No he podío conectá. Prueba otra vez.");
-      debug(e && e.message ? e.message : String(e));
-    }
+    await conectar(via);
     ocupado = false;
   }
 
