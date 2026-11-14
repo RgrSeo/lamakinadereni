@@ -100,7 +100,7 @@
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
   <p class="debug" id="debug"></p>
-  <p class="pie">Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">v4 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
@@ -171,9 +171,8 @@
           }
           poner("Te ha colgao. Normal. ¿Otra ronda?");
           try {
-            if (d && d.reason !== "user") {
-              debug("[" + tipo + "] " + [d.reason, d.message, d.closeCode, d.closeReason].filter(Boolean).join(" · "));
-            }
+            const dur = Math.round((Date.now() - abierta) / 1000);
+            debug("[" + tipo + "] " + (d ? [d.reason, d.message, d.closeCode, d.closeReason].filter(Boolean).join(" · ") : "sin datos") + " · " + dur + "s");
           } catch (e) {}
         },
         onError: (msg, ctx) => {
