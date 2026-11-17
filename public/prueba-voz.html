@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Prueba de voz – La Makina de Reñí</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--rojo:#C8102E;--albero:#E8B04B;--crema:#FFF6E6;--tinta:#1D1410}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Nunito',system-ui,sans-serif;background:var(--tinta);color:var(--crema);padding:24px 16px}
+  main{max-width:720px;margin:0 auto}
+  h1{font-family:'Lilita One',cursive;font-weight:400;color:var(--albero);font-size:34px}
+  p.sub{opacity:.8;margin:6px 0 20px}
+  .panel{background:#2a1e18;border-radius:16px;padding:16px;margin-bottom:16px}
+  label{display:block;font-weight:800;font-size:14px;margin-bottom:6px;color:var(--albero)}
+  select,textarea{width:100%;padding:10px;border-radius:10px;border:none;font:inherit;font-size:15px}
+  textarea{min-height:70px;resize:vertical}
+  .fila{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+  .fila > div{flex:1;min-width:180px}
+  input[type=range]{width:100%}
+  button{font-family:'Lilita One',cursive;font-size:18px;border:none;border-radius:12px;padding:10px 16px;cursor:pointer}
+  .hablar{background:var(--rojo);color:var(--crema);margin-top:12px}
+  .parar{background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema);margin-top:12px;margin-left:8px}
+  .frases{display:grid;gap:8px}
+  .frases button{font-family:'Nunito',sans-serif;font-weight:600;font-size:15px;text-align:left;background:#3a2a22;color:var(--crema);padding:12px}
+  .frases button:hover{background:#4a352b}
+  .nota{font-size:13px;opacity:.65;margin-top:8px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Prueba de voz gratis</h1>
+  <p class="sub">La voz que trae tu ordenador o tu móvil, sin coste. Elige voz, ajusta y pulsa una frase.</p>
+
+  <div class="panel">
+    <label for="voz">Voz</label>
+    <select id="voz"></select>
+    <p class="nota" id="nota">Cargando voces…</p>
+    <div class="fila">
+      <div><label>Velocidad: <span id="vVel">1.05</span></label><input type="range" id="vel" min="0.6" max="1.6" step="0.05" value="1.05"></div>
+      <div><label>Tono: <span id="vTono">0.9</span></label><input type="range" id="tono" min="0.3" max="1.8" step="0.05" value="0.9"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <label>Frases de La Makina</label>
+    <div class="frases" id="frases"></div>
+  </div>
+
+  <div class="panel">
+    <label for="texto">O escribe la tuya</label>
+    <textarea id="texto">¿Y a mí qué me cuentáh, quiyo? Anda, anda, vete pa'yá, pesao, que tengo yo musho que hasé.</textarea>
+    <button class="hablar" id="btnHablar">▶ Que lo diga</button>
+    <button class="parar" id="btnParar">■ Parar</button>
+  </div>
+</main>
+
+<script>
+  const frases = [
+    "¿Y a mí qué me cuentáh, quiyo? Anda, ¿qué quiereh ahora, niño?",
+    "Ozú, qué fatiguita me da, hay que ve, hay que ve.",
+    "¿Tú no tiéh otra cosa que hasé, carajote?",
+    "No tengo yo er chocho pa farolillo, mamarracho.",
+    "Vete a frei espárrago, malaje, que me tiéh frita.",
+    "Mira, te digo una cosa, pero que no salga de aquí: la del quinto no se lava ni los domingos.",
+    "Ereh más tonto que er que asó la manteca, chiquillo.",
+    "Deja ya de tocarme er papo y hazme un bizum, miarma."
+  ];
+  const sel = document.getElementById("voz"), nota = document.getElementById("nota");
+  const vel = document.getElementById("vel"), tono = document.getElementById("tono");
+  let voces = [];
+
+  function cargarVoces(){
+    const todas = speechSynthesis.getVoices();
+    voces = todas.filter(v => v.lang && v.lang.toLowerCase().startsWith("es"));
+    if (!voces.length) voces = todas;
+    voces.sort((a,b) => (b.lang==="es-ES") - (a.lang==="es-ES"));
+    sel.innerHTML = voces.map((v,i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join("");
+    nota.textContent = voces.length
+      ? `${voces.length} voces en español en este equipo. Prueba varias: cambian mucho entre Chrome, Edge y el móvil.`
+      : "Este navegador no tiene voces. Prueba en Chrome o Edge.";
+    let guardada = null;
+    try { guardada = localStorage.getItem("vozMakina"); } catch(e){}
+    if (guardada !== null && voces[guardada]) sel.value = guardada;
+  }
+  cargarVoces();
+  speechSynthesis.onvoiceschanged = cargarVoces;
+
+  sel.onchange = () => { try { localStorage.setItem("vozMakina", sel.value); } catch(e){} };
+  vel.oninput = () => document.getElementById("vVel").textContent = vel.value;
+  tono.oninput = () => document.getElementById("vTono").textContent = tono.value;
+
+  function decir(t){
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    const v = voces[sel.value];
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "es-ES"; }
+    u.rate = parseFloat(vel.value);
+    u.pitch = parseFloat(tono.value);
+    speechSynthesis.speak(u);
+  }
+
+  const cont = document.getElementById("frases");
+  frases.forEach(f => {
+    const b = document.createElement("button");
+    b.textContent = "▶ " + f;
+    b.onclick = () => decir(f);
+    cont.appendChild(b);
+  });
+  document.getElementById("btnHablar").onclick = () => decir(document.getElementById("texto").value);
+  document.getElementById("btnParar").onclick = () => speechSynthesis.cancel();
+</script>
+</body>
+</html>
