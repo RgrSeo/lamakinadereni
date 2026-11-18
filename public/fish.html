@@ -69,7 +69,15 @@
   .si{background:var(--albero);color:var(--tinta)}
   .no{background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
   .oculto{display:none!important}
-  .fish-wrap{margin:28px auto 16px;min-height:120px;display:flex;justify-content:center}
+  .fish-wrap{margin:28px auto 16px}
+  .flecha{font-size:20px;font-weight:800;color:var(--albero);line-height:1.4}
+  fish-agent{
+    --fish-accent:#C8102E; --fish-accent-text:#FFF6E6;
+    --fish-orb-color-1:#E8B04B; --fish-orb-color-2:#C8102E;
+    --fish-bubble-agent-bg:#C8102E; --fish-bubble-agent-text:#FFF6E6;
+    --fish-fab-size:84px; --fish-offset-x:24px; --fish-offset-y:24px;
+    --fish-font:'Nunito',system-ui,sans-serif;
+  }
   .etiqueta{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:var(--albero);color:var(--tinta);font-weight:800;font-size:12px}
 </style>
 </head>
@@ -95,10 +103,11 @@
   <span class="etiqueta">Versión Fish · en pruebas</span>
 
   <div class="fish-wrap">
-    <fish-agent agent-id="327a74cebe4d4cbbb6f201f5c1ea4725"></fish-agent>
+    <p class="flecha">Pulsa el botón rojo de abajo a la derecha<br>y háblale, si te atreves 👉</p>
   </div>
+  <fish-agent agent-id="327a74cebe4d4cbbb6f201f5c1ea4725"></fish-agent>
 
-  <p class="pie">fish-v1 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">fish-v2 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
