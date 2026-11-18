@@ -68,6 +68,12 @@
   .si{background:var(--albero);color:var(--tinta)}
   .no{background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
   .oculto{display:none!important}
+  .modos{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  .modos button{font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:8px 12px;border-radius:999px;border:none;cursor:pointer;background:#3a2a22;color:var(--crema)}
+  .modos button.sel{background:var(--albero);color:var(--tinta)}
+  .colgar{margin-top:4px;font-family:'Lilita One',cursive;font-size:18px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
+  .boton.pulsado{transform:scale(.94);background:#E8B04B;color:var(--tinta)}
+  .boton{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </style>
 </head>
 <body>
@@ -97,10 +103,15 @@
     </button>
   </div>
 
+  <div class="modos" id="modos">
+    <button id="modoLibre">🎙️ Manos libres</button>
+    <button id="modoPulsar">✋ Pulsar para hablar</button>
+  </div>
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
+  <button class="colgar oculto" id="colgarBtn">Colgar</button>
   <p class="debug" id="debug"></p>
-  <p class="pie">v7 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">v8 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
@@ -108,7 +119,7 @@
   // ⚠️ Pega aquí el ID completo de tu agente de ElevenLabs
   const AGENT_ID = "agent_0301m6xbn3vven8tzwxfvjnkr1eg";
 
-  import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client/+esm";
+  import { Conversation } from "https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.37.0/+esm";
 
   const $ = (id) => document.getElementById(id);
   const gate = $("gate"), boton = $("boton"), wrap = $("wrap"),
@@ -137,6 +148,7 @@
 
   function reiniciarUI() {
     conversacion = null;
+    try { alDesconectarPTT(); } catch (e) {}
     boton.classList.remove("activo");
     wrap.classList.remove("hablando");
     botonTexto.textContent = "Háblale";
@@ -157,6 +169,7 @@
           boton.classList.add("activo");
           botonTexto.textContent = "Colgar";
           poner("Ya te escucha… di algo, pesao.");
+          setTimeout(alConectarPTT, 0);
         },
         onDisconnect: (d) => {
           const rapido = Date.now() - abierta < 8000;
@@ -233,8 +246,55 @@
   // Evita colgar sin querer por un doble toque nada más conectar
   let conectadoEn = 0;
   const marcarConexion = () => { conectadoEn = Date.now(); };
+
+  // --- Modo de habla: manos libres o pulsar para hablar ---
+  let modo = "libre";
+  try { if (localStorage.getItem("makinaModo") === "pulsar") modo = "pulsar"; } catch (e) {}
+  const colgarBtn = $("colgarBtn");
+  function pintarModo() {
+    $("modoLibre").classList.toggle("sel", modo === "libre");
+    $("modoPulsar").classList.toggle("sel", modo === "pulsar");
+  }
+  pintarModo();
+  $("modoLibre").onclick = () => { if (conversacion) return; modo = "libre"; try { localStorage.setItem("makinaModo", modo); } catch (e) {} pintarModo(); };
+  $("modoPulsar").onclick = () => { if (conversacion) return; modo = "pulsar"; try { localStorage.setItem("makinaModo", modo); } catch (e) {} pintarModo(); };
+
+  function alConectarPTT() {
+    $("modos").classList.add("oculto");
+    if (modo !== "pulsar") return;
+    (conversacion && conversacion.setMicMuted && conversacion.setMicMuted(true));
+    botonTexto.textContent = "Mantén pa hablá";
+    colgarBtn.classList.remove("oculto");
+  }
+  function alDesconectarPTT() {
+    $("modos").classList.remove("oculto");
+    colgarBtn.classList.add("oculto");
+    boton.classList.remove("pulsado");
+  }
+  let pulsando = false;
+  function soltar() {
+    if (!pulsando) return;
+    pulsando = false;
+    boton.classList.remove("pulsado");
+    (conversacion && conversacion.setMicMuted && conversacion.setMicMuted(true));
+    poner("A ver qué me dice este…");
+  }
+  boton.addEventListener("pointerdown", (ev) => {
+    if (modo !== "pulsar" || !conversacion) return;
+    ev.preventDefault();
+    pulsando = true;
+    boton.classList.add("pulsado");
+    0;
+    (conversacion && conversacion.setMicMuted && conversacion.setMicMuted(false));
+    poner("Habla, que te escucho… y suelta cuando acabes.");
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((t) => boton.addEventListener(t, soltar));
+  boton.addEventListener("contextmenu", (e) => { if (modo === "pulsar") e.preventDefault(); });
+  colgarBtn.onclick = () => { if (!ocupado && conversacion) terminar(); };
+
   boton.onclick = () => {
     if (ocupado) return;
+    if (modo === "pulsar" && conversacion) return;
     if (conversacion && Date.now() - conectadoEn < 3000) return;
     conversacion ? terminar() : empezar();
   };

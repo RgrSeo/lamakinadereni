@@ -69,6 +69,12 @@
   .si{background:var(--albero);color:var(--tinta)}
   .no{background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
   .oculto{display:none!important}
+  .modos{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  .modos button{font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;padding:8px 12px;border-radius:999px;border:none;cursor:pointer;background:#3a2a22;color:var(--crema)}
+  .modos button.sel{background:var(--albero);color:var(--tinta)}
+  .colgar{margin-top:4px;font-family:'Lilita One',cursive;font-size:18px;padding:8px 18px;border-radius:12px;border:none;cursor:pointer;background:transparent;color:var(--crema);box-shadow:inset 0 0 0 2px var(--crema)}
+  .boton.pulsado{transform:scale(.94);background:#E8B04B;color:var(--tinta)}
+  .boton{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 </style>
 </head>
 <body>
@@ -99,10 +105,15 @@
     </button>
   </div>
 
+  <div class="modos" id="modos">
+    <button id="modoLibre">🎙️ Manos libres</button>
+    <button id="modoPulsar">✋ Pulsar para hablar</button>
+  </div>
   <p class="estado" id="estado">Pulsa el botón y pregúntale lo que quieras… si te atreves.</p>
 
+  <button class="colgar oculto" id="colgarBtn">Colgar</button>
   <p class="debug" id="debug"></p>
-  <p class="pie">fish-v4 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
+  <p class="pie">fish-v5 · Humor para mayores de 18. Es una IA: no te tomes nada a pecho.<br>
     Al hablar, tu voz se procesa para generar las respuestas.</p>
 </main>
 
@@ -134,6 +145,7 @@
 
   function reiniciarUI() {
     sesion = null;
+    try { alDesconectarPTT(); } catch (e) {}
     boton.classList.remove("activo");
     wrap.classList.remove("hablando");
     botonTexto.textContent = "Háblale";
@@ -159,6 +171,7 @@
             boton.classList.add("activo");
             botonTexto.textContent = "Colgar";
             poner("Ya te escucha… di algo, pesao.");
+            setTimeout(alConectarPTT, 0);
           },
           onModeChange: (mode) => {
             if (mode === "speaking") {
@@ -201,8 +214,55 @@
     ocupado = false;
   }
 
+
+  // --- Modo de habla: manos libres o pulsar para hablar ---
+  let modo = "libre";
+  try { if (localStorage.getItem("makinaModo") === "pulsar") modo = "pulsar"; } catch (e) {}
+  const colgarBtn = $("colgarBtn");
+  function pintarModo() {
+    $("modoLibre").classList.toggle("sel", modo === "libre");
+    $("modoPulsar").classList.toggle("sel", modo === "pulsar");
+  }
+  pintarModo();
+  $("modoLibre").onclick = () => { if (sesion) return; modo = "libre"; try { localStorage.setItem("makinaModo", modo); } catch (e) {} pintarModo(); };
+  $("modoPulsar").onclick = () => { if (sesion) return; modo = "pulsar"; try { localStorage.setItem("makinaModo", modo); } catch (e) {} pintarModo(); };
+
+  function alConectarPTT() {
+    $("modos").classList.add("oculto");
+    if (modo !== "pulsar") return;
+    (sesion && sesion.setMicMuted(true).catch(()=>{}));
+    botonTexto.textContent = "Mantén pa hablá";
+    colgarBtn.classList.remove("oculto");
+  }
+  function alDesconectarPTT() {
+    $("modos").classList.remove("oculto");
+    colgarBtn.classList.add("oculto");
+    boton.classList.remove("pulsado");
+  }
+  let pulsando = false;
+  function soltar() {
+    if (!pulsando) return;
+    pulsando = false;
+    boton.classList.remove("pulsado");
+    (sesion && sesion.setMicMuted(true).catch(()=>{}));
+    poner("A ver qué me dice este…");
+  }
+  boton.addEventListener("pointerdown", (ev) => {
+    if (modo !== "pulsar" || !sesion) return;
+    ev.preventDefault();
+    pulsando = true;
+    boton.classList.add("pulsado");
+    (sesion && sesion.isSpeaking && sesion.interrupt());
+    (sesion && sesion.setMicMuted(false).catch(()=>{}));
+    poner("Habla, que te escucho… y suelta cuando acabes.");
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach((t) => boton.addEventListener(t, soltar));
+  boton.addEventListener("contextmenu", (e) => { if (modo === "pulsar") e.preventDefault(); });
+  colgarBtn.onclick = () => { if (!ocupado && sesion) terminar(); };
+
   boton.onclick = () => {
     if (ocupado) return;
+    if (modo === "pulsar" && sesion) return;
     if (sesion && Date.now() - conectadoEn < 3000) return;
     sesion ? terminar() : empezar();
   };
